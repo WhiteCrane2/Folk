@@ -332,11 +332,41 @@ void drawHighlights() {
     rect(OFFX + selC * CELL, OFFY + selR * CELL, CELL, CELL);
 
     noStroke();
+    for (Move m : selectedMoves) {
+      // dotted line through every square the piece lands on, hop by hop
+      fill(60, 195, 240, 235);
+      for (int i = 0; i < m.path.size() - 1; i++) {
+        int[] a = m.path.get(i);
+        int[] b = m.path.get(i + 1);
+        dottedLine(cellCenterX(a[1]), cellCenterY(a[0]), cellCenterX(b[1]), cellCenterY(b[0]));
+      }
+      // smaller dots on the squares it stops at along the way (multi-jumps)
+      for (int i = 1; i < m.path.size() - 1; i++) {
+        int[] w = m.path.get(i);
+        ellipse(cellCenterX(w[1]), cellCenterY(w[0]), 11, 11);
+      }
+    }
+
+    // bigger dot on each final landing square
     fill(80, 220, 255, 150);
     for (Move m : selectedMoves) {
       int[] to = m.path.get(m.path.size() - 1);
-      ellipse(OFFX + to[1] * CELL + CELL / 2.0f, OFFY + to[0] * CELL + CELL / 2.0f, 18, 18);
+      ellipse(cellCenterX(to[1]), cellCenterY(to[0]), 18, 18);
     }
+  }
+}
+
+float cellCenterX(int col) { return OFFX + col * CELL + CELL / 2.0f; }
+float cellCenterY(int row) { return OFFY + row * CELL + CELL / 2.0f; }
+
+// a row of small round dots from (x1, y1) to (x2, y2), drawn in the current fill
+void dottedLine(float x1, float y1, float x2, float y2) {
+  float len = dist(x1, y1, x2, y2);
+  int n = max(1, round(len / 9));   // roughly one dot every 9 px
+  noStroke();
+  for (int i = 0; i <= n; i++) {
+    float t = i / (float) n;
+    ellipse(lerp(x1, x2, t), lerp(y1, y2, t), 4, 4);
   }
 }
 
@@ -1595,8 +1625,23 @@ void drawCHighlights() {
     rect(OFFX + cSelC * CELL, OFFY + cSelR * CELL, CELL, CELL);
 
     noStroke();
+    fill(60, 195, 240, 235);
+    float sx = cellCenterX(cSelC), sy = cellCenterY(cSelR);
+    for (CMove m : cSelMoves) {
+      float tx = cellCenterX(m.tc), ty = cellCenterY(m.tr);
+      int dr = m.tr - cSelR, dc = m.tc - cSelC;
+      if (abs(dr) + abs(dc) == 3 && dr != 0 && dc != 0) {   // knight: dotted L-shape, long leg first
+        float wx = (abs(dr) == 2) ? sx : tx;
+        float wy = (abs(dr) == 2) ? ty : sy;
+        dottedLine(sx, sy, wx, wy);
+        dottedLine(wx, wy, tx, ty);
+      } else {
+        dottedLine(sx, sy, tx, ty);
+      }
+    }
+
     fill(80, 220, 255, 150);
-    for (CMove m : cSelMoves) ellipse(OFFX + m.tc * CELL + CELL / 2.0f, OFFY + m.tr * CELL + CELL / 2.0f, 18, 18);
+    for (CMove m : cSelMoves) ellipse(cellCenterX(m.tc), cellCenterY(m.tr), 18, 18);
   }
 }
 
